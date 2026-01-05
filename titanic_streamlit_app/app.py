@@ -3,8 +3,6 @@ import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 
-# Load data
-df = pd.read_csv("Titanic_train.csv")
 
 # Handle missing values
 df['Age'].fillna(df['Age'].median(), inplace=True)
