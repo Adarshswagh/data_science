@@ -1,38 +1,33 @@
-import streamlit as st
 import pandas as pd
 import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
 
-# Load trained model
-model = joblib.load("logistic_model.pkl")
+# Load data
+df = pd.read_csv("Titanic_train.csv")
 
-st.title("🚢 Titanic Survival Prediction")
+# Handle missing values
+df['Age'].fillna(df['Age'].median(), inplace=True)
+df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
+df.drop('Cabin', axis=1, inplace=True)
 
-pclass = st.selectbox("Passenger Class", [1, 2, 3])
-sex = st.selectbox("Sex", ["male", "female"])
-age = st.slider("Age", 0, 100, 30)
-sibsp = st.number_input("Siblings / Spouses aboard", 0, 8, 0)
-parch = st.number_input("Parents / Children aboard", 0, 6, 0)
-fare = st.number_input("Fare", 0.0, 600.0, 32.2)
-embarked = st.selectbox("Port of Embarkation", ["C", "Q", "S"])
+# Encode
+df['Sex'] = df['Sex'].map({'male': 1, 'female': 0})
+df = pd.get_dummies(df, columns=['Embarked'])
 
-sex_val = 1 if sex == "male" else 0
-embarked_C = 1 if embarked == "C" else 0
-embarked_Q = 1 if embarked == "Q" else 0
-embarked_S = 1 if embarked == "S" else 0
+# Features & target
+X = df.drop(['Survived', 'PassengerId', 'Name', 'Ticket'], axis=1)
+y = df['Survived']
 
-input_df = pd.DataFrame([[
-    pclass, sex_val, age, sibsp, parch, fare,
-    embarked_C, embarked_Q, embarked_S
-]], columns=[
-    "Pclass", "Sex", "Age", "SibSp", "Parch", "Fare",
-    "Embarked_C", "Embarked_Q", "Embarked_S"
-])
+# Train
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
-if st.button("Predict"):
-    pred = model.predict(input_df)[0]
-    prob = model.predict_proba(input_df)[0][1]
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train, y_train)
 
-    if pred == 1:
-        st.success(f"Passenger will SURVIVE (Probability: {prob:.2f})")
-    else:
-        st.error(f"Passenger will NOT survive (Probability: {1 - prob:.2f})")
+# Save model
+joblib.dump(model, "logistic_model.pkl")
+
+print("Model trained and saved as logistic_model.pkl")
